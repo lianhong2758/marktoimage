@@ -9,7 +9,7 @@ import (
 
 // 传参接口
 type RichTextSegment interface {
-	Inline() bool //绘制本组件是否换行
+	Inline() bool //本组件没有结束,继续在本行绘制
 	SetParent(*RichText)
 	Draw()
 }
@@ -23,38 +23,37 @@ type TextStyle struct {
 	Bold      bool //加粗
 	Italic    bool //斜体
 	Underline bool //下划线
-	Block     bool //块,用于存储后面元素是否可以使用Inline
 }
 
 // RichText 表示富文本
 type RichText struct {
-	Segments   []RichTextSegment
-	NextInline bool
-	Size       float64 //用于保存当前字体大小
-	Cov        *gg.Context
-	gg.Point   //用于定位画笔
+	Segments []RichTextSegment
+	Size     float64 //用于保存当前字体大小
+	Cov      *gg.Context
+	gg.Point //用于定位画笔
 	Config
 }
 type Config struct {
-	FontData        [][]byte //用于全局的字体读取
-	TopMargin       float64  //上边距留白
-	TextMargin      float64  //左右留白
-	Width           float64  //宽度
-	Height          float64  //高度
-	LineHeight      float64  //行高
-	DefaultColor    color.Color
-	BackgroundColor color.Color
+	FontData   [][]byte //用于全局的字体读取
+	TopMargin  float64  //上边距留白
+	TextMargin float64  //左右留白
+	Width      float64  //宽度
+	Height     float64  //高度
+	LineHeight float64  //行高
+	Colors     Colors
+}
+type Colors struct {
+	DefaultColor     color.Color //默认字体颜色
+	BackgroundColor  color.Color
+	CodeBlockBgColor color.Color
+	CodeColor        color.Color
+	CodeNoteColor    color.Color
 }
 
 func NewRichText(cfg Config) *RichText {
-	if cfg.DefaultColor == nil {
-		cfg.DefaultColor = color.NRGBA{R: 0, G: 0, B: 0, A: 255}
-	}
-	if cfg.BackgroundColor == nil {
-		cfg.BackgroundColor = color.NRGBA{255, 255, 255, 255}
-	}
+	cfg.setDefaultColor()
 	cov := gg.NewContext(int(cfg.Width), int(cfg.Height))
-	cov.SetRGB(1, 1, 1)
+	cov.SetColor(cfg.Colors.BackgroundColor)
 	cov.Clear()
 	return &RichText{
 		Cov:      cov,
@@ -63,6 +62,30 @@ func NewRichText(cfg Config) *RichText {
 		Config:   cfg,
 	}
 }
+
+func (cfg *Config) setDefaultColor() {
+	if cfg.Colors.DefaultColor == nil {
+		r, g, b, a := gg.ParseHexColor("#d1d7e0")
+		cfg.Colors.DefaultColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+	if cfg.Colors.BackgroundColor == nil {
+		r, g, b, a := gg.ParseHexColor("#212830")
+		cfg.Colors.BackgroundColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+	if cfg.Colors.CodeBlockBgColor == nil {
+		r, g, b, a := gg.ParseHexColor("#262c36")
+		cfg.Colors.CodeBlockBgColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+	if cfg.Colors.CodeColor == nil {
+		r, g, b, a := gg.ParseHexColor("#d1d7e0")
+		cfg.Colors.CodeColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+	if cfg.Colors.CodeNoteColor == nil {
+		r, g, b, a := gg.ParseHexColor("#7a818a")
+		cfg.Colors.CodeNoteColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+}
+
 func (r *RichText) AppendSegment(rs ...RichTextSegment) {
 	for i := range rs {
 		rs[i].SetParent(r)
@@ -72,14 +95,14 @@ func (r *RichText) AppendSegment(rs ...RichTextSegment) {
 
 func (r *RichText) Draw() {
 	for k := 0; k < len(r.Segments)-1; k++ {
-		r.NextInline = r.Segments[k+1].Inline()
+		//	r.NextInline = r.Segments[k+1].Inline()
 		r.Segments[k].Draw()
 		//检查余量
 		if r.Height-r.Y < 200 {
 			r.Expansion()
 		}
 	}
-	r.NextInline = false
+	//	r.NextInline = false
 	r.Segments[len(r.Segments)-1].Draw()
 }
 
@@ -114,17 +137,17 @@ func (r *RichText) Expansion() {
 
 var (
 	//默认文本
-	TextStyleDefault = TextStyle{Inline: true, Block: true}
+	TextStyleDefault = TextStyle{Inline: true, Size: 40}
 	//换行文本
-	TextStyleBlockquote = TextStyle{Inline: false, Block: true}
-	//标准块
-	TextStyleParagraph = TextStyle{Inline: false, Size: 40, Block: true}
-	//用于标题
-	TextStyleHead = TextStyle{Inline: false, Bold: true, Size: 60, Block: true}
-	//用于子标题
-	TextStyleSubHead = TextStyle{Inline: false, Bold: true, Size: 50, Block: true}
+	TextStyleBlockquote = TextStyle{Inline: false, Size: 40}
+	//段落,用于组件间距
+	TextStyleParagraph = TextStyle{Inline: false, Size: 15 + 40}
+	//四级标题
+	TextStyleHead = TextStyle{Inline: false, Bold: true, Size: 60}
+	//三级标题
+	TextStyleSubHead = TextStyle{Inline: false, Bold: true, Size: 50}
 	//用于List的序号样式
-	TextStyleList = TextStyle{Inline: false, Bold: true}
+	TextStyleList = TextStyle{Inline: true, Size: 40}
 	//用于link
 	TextStyleLink = TextStyle{Inline: true, Color: color.RGBA{0, 0, 255, 255}}
 	//用于code

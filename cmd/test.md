@@ -7,4 +7,4 @@ dcc
 - 2
 - 3
 ***
-`printf()`函数
+`printf()`函数的用法有`printf("abc")`打印内容

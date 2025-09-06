@@ -28,7 +28,7 @@ func (t *TextSegment) Draw() {
 	ax, _ := t.parent.Cov.MeasureString(t.Text)
 	t.parent.X += ax + float64(int(t.parent.LineHeight)/2)
 	//nextline
-	if !t.parent.NextInline || t.Style.Block {
+	if !t.Inline() {
 		t.parent.X = 0
 		t.parent.Y += t.parent.Size + t.parent.LineHeight
 	}
@@ -46,7 +46,7 @@ func (t *TextSegment) Draw() {
 
 func (t *TextSegment) color() color.Color {
 	if t.Style.Color == nil {
-		return t.parent.Config.DefaultColor
+		return t.parent.Config.Colors.DefaultColor
 	}
 	return t.Style.Color
 }

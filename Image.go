@@ -34,7 +34,7 @@ func (i *ImageSegment) Draw() {
 	i.InitImage()
 	i.resize()
 	if i.Image == nil {
-		t := TextSegment{Text: i.Title, Style: TextStyle{Inline: false, Color: i.parent.DefaultColor}}
+		t := TextSegment{Text: i.Title, Style: TextStyle{Inline: false, Color: i.parent.Colors.DefaultColor}}
 		t.SetParent(i.parent)
 		t.Draw()
 	}

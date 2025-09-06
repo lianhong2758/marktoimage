@@ -58,7 +58,7 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 	case *ast.Paragraph:
 		children, err := renderChildren(source, n, blockquote)
 		if !blockquote {
-			linebreak := &TextSegment{Style: TextStyleParagraph}
+			linebreak := &TextSegment{Style: TextStyleParagraph, Text: ""}
 			children = append(children, linebreak)
 		}
 		return children, err
@@ -69,7 +69,6 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		}, err
 	case *ast.ListItem:
 		texts, err := renderChildren(source, n, blockquote)
-		//return []RichTextSegment{&ParagraphSegment{Texts: texts}}, err
 		return texts, err
 	case *ast.TextBlock:
 		return renderChildren(source, n, blockquote)
@@ -122,9 +121,15 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 			// These empty text elements indicate single line breaks after non-text elements in goldmark.
 			return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: " "}}, nil
 		}
-		text = suffixSpaceIfAppropriate(text, n)
 		if blockquote {
 			return []RichTextSegment{&TextSegment{Style: TextStyleBlockquote, Text: text}}, nil
+		}
+		//需要换行
+		if t.SoftLineBreak() {
+			return []RichTextSegment{
+				&TextSegment{Style: TextStyleDefault, Text: text},
+				&TextSegment{Style: TextStyleBlockquote, Text: " "},
+			}, nil
 		}
 		return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: text}}, nil
 	case *ast.Blockquote:
@@ -141,14 +146,6 @@ func parseMarkdownImage(t *ast.Image) []RichTextSegment {
 		Width: 960,
 	},
 	}
-}
-
-func suffixSpaceIfAppropriate(text string, n ast.Node) string {
-	next := n.NextSibling()
-	if next != nil && next.Type() == ast.TypeInline && !strings.HasSuffix(text, " ") {
-		return text + " "
-	}
-	return text
 }
 
 func renderChildren(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, error) {

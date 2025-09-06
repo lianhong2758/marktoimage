@@ -9,7 +9,7 @@ func (SeparatorSegment) Inline() bool {
 }
 func (s *SeparatorSegment) Draw() {
 	s.parent.Y += s.parent.LineHeight * 3
-	s.parent.Cov.SetColor(s.parent.DefaultColor)
+	s.parent.Cov.SetColor(s.parent.Colors.DefaultColor)
 	s.parent.Cov.SetLineWidth(3)
 	s.parent.Cov.MoveTo(s.parent.X, s.parent.Y)
 	s.parent.Cov.LineTo(s.parent.X+s.parent.Width, s.parent.Y)

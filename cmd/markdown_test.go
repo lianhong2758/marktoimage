@@ -27,7 +27,8 @@ func TestMarkdown(t *testing.T) {
 	rt.Draw()
 	for _, v := range rt.Segments {
 		if l, ok := v.(*marktoimage.TextSegment); ok {
-			fmt.Println(*l)
+			te := l.Text
+			fmt.Println(*l, len(te))
 		}
 	}
 	rt.Cut()
@@ -50,14 +51,14 @@ func TestRichText(t *testing.T) {
 		})
 	rt.AppendSegment(
 		&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "abcdefg"},
-		&marktoimage.TextSegment{Style: marktoimage.TextStyle{Color: color.RGBA{255, 0, 0, 255}, Inline: true},
+		&marktoimage.TextSegment{Style: marktoimage.TextStyle{Color: color.RGBA{255, 0, 0, 255}, Inline: false},
 			Text: "abcdefg"},
 		&marktoimage.SeparatorSegment{},
 		&marktoimage.TextSegment{Style: marktoimage.TextStyle{Inline: false}, Text: "abcdefg"},
 		&marktoimage.SeparatorSegment{},
 		&marktoimage.TextSegment{Style: marktoimage.TextStyle{Inline: false}, Text: "abcdefg"},
 		&marktoimage.ListSegment{Ordered: true, Items: []marktoimage.RichTextSegment{
-			&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "abc"},
+			&marktoimage.TextSegment{Style: marktoimage.TextStyleBlockquote, Text: "abc"},
 			&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "efg"},
 			&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "abdefg"},
 		}},
@@ -66,7 +67,7 @@ func TestRichText(t *testing.T) {
 			Title: "Win11",
 			Width: 960,
 		},
-		&marktoimage.HyperlinkSegment{Style: marktoimage.TextStyle{Inline: true, Color: color.RGBA{0, 0, 255, 255}}, Text: "假如这是一个链接"},
+		&marktoimage.HyperlinkSegment{Style: marktoimage.TextStyle{Inline: false, Color: color.RGBA{0, 0, 255, 255}}, Text: "假如这是一个链接"},
 	)
 	rt.SetFontSize(marktoimage.TextStyle{Inline: true, Size: 40})
 	rt.Draw()

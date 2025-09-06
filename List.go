@@ -7,7 +7,8 @@ type ListSegment struct {
 	Ordered bool
 
 	segments []RichTextSegment
-	parent   *RichText
+
+	parent *RichText
 }
 
 func (ListSegment) Inline() bool {
@@ -19,8 +20,17 @@ func (l *ListSegment) Draw() {
 		if l.parent.X == 0 { //如果是开头就加间隔
 			l.parent.X += l.parent.TextMargin * 2
 		}
-		l.parent.NextInline=i%2 == 0
 		v.Draw()
+		//奇数块内换行,如果已经换行则忽略
+		if i%2 == 1 && v.Inline() {
+			l.parent.X = l.parent.TextMargin * 2
+			l.parent.Y += l.parent.Size + l.parent.LineHeight
+		}
+	}
+	//结尾换行
+	if l.segments[len(l.segments)-1].Inline() {
+		l.parent.X = 0
+		//l.parent.Y += l.parent.Size + l.parent.LineHeight
 	}
 }
 

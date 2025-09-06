@@ -1,79 +1,193 @@
 package marktoimage
 
 import (
-	"image/color"
+	"io"
+	"log"
+	"net/url"
+	"strings"
 
-	"github.com/FloatTech/gg"
-	"golang.org/x/image/font"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/renderer"
 )
 
-// 传参接口
-type RichTextSegment interface {
-	Inline() bool
-	SetParent(*RichText)
-	Draw(bool)
+func NewRichTextFromMarkdown(content string) *RichText {
+	rt := NewRichText(
+		Config{
+			Width:      1080,
+			Height:     1920,
+			LineHeight: 8,
+			TextMargin: 20,
+			TopMargin:  10,
+		})
+	rt.AppendSegment(parseMarkdown(content)...)
+	return rt
+}
+func (t *RichText) ParseMarkdown(content string) {
+	t.Segments = []RichTextSegment{}
+	t.AppendMarkdown(content)
+}
+func (t *RichText) AppendMarkdown(content string) {
+	t.AppendSegment(parseMarkdown(content)...)
 }
 
-// TextStyle 表示文本样式
-type TextStyle struct {
-	Inline    bool //是否在一行绘制/是否不要新建一行
-	Size      float64
-	FontFace  font.Face
-	Color     color.Color
-	Bold      bool //加粗
-	Italic    bool //斜体
-	Underline bool //下划线
+func parseMarkdown(content string) []RichTextSegment {
+	r := markdownRenderer{}
+	md := goldmark.New(goldmark.WithRenderer(&r))
+	err := md.Convert([]byte(content), nil)
+	if err != nil {
+		log.Print(err)
+	}
+	return r
 }
 
-// RichText 表示富文本
-type RichText struct {
-	Segments []RichTextSegment
-	Cov      *gg.Context
-	gg.Point //用于定位画笔
-	Config
-}
-type Config struct {
-	TopMargin       float64 //上边距留白
-	TextMargin      float64 //左右留白
-	Width           float64 //宽度
-	Height          float64 //高度
-	LineHeight      float64 //行高
-	DefaultColor    color.Color
-	BackgroundColor color.Color
+type markdownRenderer []RichTextSegment
+
+func (m *markdownRenderer) AddOptions(...renderer.Option) {}
+
+func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error {
+	segs, err := renderNode(source, n, false)
+	*m = segs
+	return err
 }
 
-func NewRichText(cfg Config) *RichText {
-	if cfg.DefaultColor == nil {
-		cfg.DefaultColor = color.NRGBA{R: 0, G: 0, B: 0, A: 255}
+func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, error) {
+	switch t := n.(type) {
+	case *ast.Document:
+		return renderChildren(source, n, blockquote)
+	case *ast.Paragraph:
+		children, err := renderChildren(source, n, blockquote)
+		if !blockquote {
+			linebreak := &TextSegment{Style: TextStyleParagraph}
+			children = append(children, linebreak)
+		}
+		return children, err
+	case *ast.List:
+		items, err := renderChildren(source, n, blockquote)
+		return []RichTextSegment{
+			&ListSegment{Items: items, Ordered: t.Marker != '*' && t.Marker != '-' && t.Marker != '+'},
+		}, err
+	case *ast.ListItem:
+		texts, err := renderChildren(source, n, blockquote)
+		//return []RichTextSegment{&ParagraphSegment{Texts: texts}}, err
+		return texts, err
+	case *ast.TextBlock:
+		return renderChildren(source, n, blockquote)
+	case *ast.Heading:
+		text := forceIntoHeadingText(source, n)
+		switch t.Level {
+		case 1:
+			return []RichTextSegment{&TextSegment{Style: TextStyleHead, Text: text}}, nil
+		case 2:
+			return []RichTextSegment{&TextSegment{Style: TextStyleSubHead, Text: text}}, nil
+		default:
+			textSegment := TextSegment{Style: TextStyleParagraph, Text: text}
+			textSegment.Style.Bold = true
+			return []RichTextSegment{&textSegment}, nil
+		}
+	case *ast.ThematicBreak:
+		return []RichTextSegment{&SeparatorSegment{}}, nil
+	case *ast.Link:
+		link, _ := url.Parse(string(t.Destination))
+		text := forceIntoText(source, n)
+		return []RichTextSegment{&HyperlinkSegment{Text: text, URL: link, Style: TextStyleLink}}, nil
+	case *ast.CodeSpan:
+		text := forceIntoText(source, n)
+		return []RichTextSegment{&TextSegment{Style: TextStyleCode, Text: text}}, nil
+	case *ast.CodeBlock, *ast.FencedCodeBlock:
+		var data []byte
+		lines := n.Lines()
+		for i := 0; i < lines.Len(); i++ {
+			line := lines.At(i)
+			data = append(data, line.Value(source)...)
+		}
+		if len(data) == 0 {
+			return nil, nil
+		}
+		if data[len(data)-1] == '\n' {
+			data = data[:len(data)-1]
+		}
+		return []RichTextSegment{&TextSegment{Style: TextStyleCode, Text: string(data)}}, nil
+	case *ast.Emphasis:
+		text := string(forceIntoText(source, n))
+		switch t.Level {
+		case 2:
+			return []RichTextSegment{&TextSegment{Style: TextStyleStrong, Text: text}}, nil
+		default:
+			return []RichTextSegment{&TextSegment{Style: TextStyleItalic, Text: text}}, nil
+		}
+	case *ast.Text:
+		text := string(t.Value(source))
+		if text == "" {
+			// These empty text elements indicate single line breaks after non-text elements in goldmark.
+			return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: " "}}, nil
+		}
+		text = suffixSpaceIfAppropriate(text, n)
+		if blockquote {
+			return []RichTextSegment{&TextSegment{Style: TextStyleBlockquote, Text: text}}, nil
+		}
+		return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: text}}, nil
+	case *ast.Blockquote:
+		return renderChildren(source, n, true)
+	case *ast.Image:
+		return parseMarkdownImage(t), nil
 	}
-	if cfg.BackgroundColor == nil {
-		cfg.BackgroundColor = color.NRGBA{255, 255, 255, 255}
-	}
-	cov := gg.NewContext(int(cfg.Width), int(cfg.Height))
-	cov.SetRGB(1, 1, 1)
-	cov.Clear()
-	return &RichText{
-		Cov:      cov,
-		Segments: []RichTextSegment{},
-		Point:    gg.Point{X: 0, Y: cfg.TopMargin},
-		Config:   cfg,
-	}
+	return nil, nil
 }
-func (r *RichText) AppendSegment(rs ...RichTextSegment) {
-	for i := range rs {
-		rs[i].SetParent(r)
+func parseMarkdownImage(t *ast.Image) []RichTextSegment {
+	return []RichTextSegment{&ImageSegment{
+		Path:  string(t.Destination),
+		Title: string(t.Title),
+		Width: 960,
+	},
 	}
-	r.Segments = append(r.Segments, rs...)
 }
 
-func (r *RichText) Draw() {
-	for k := 0; k < len(r.Segments)-1; k++ {
-		r.Segments[k].Draw(r.Segments[k+1].Inline())
+func suffixSpaceIfAppropriate(text string, n ast.Node) string {
+	next := n.NextSibling()
+	if next != nil && next.Type() == ast.TypeInline && !strings.HasSuffix(text, " ") {
+		return text + " "
 	}
-	r.Segments[len(r.Segments)-1].Draw(false)
+	return text
 }
 
-var (
-	//用于List的序号样式
-	ListTextStyle = TextStyle{Inline: true, Bold: true}
-)
+func renderChildren(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, error) {
+	children := make([]RichTextSegment, 0, n.ChildCount())
+	for childCount, child := n.ChildCount(), n.FirstChild(); childCount > 0; childCount-- {
+		segs, err := renderNode(source, child, blockquote)
+		if err != nil {
+			return children, err
+		}
+		children = append(children, segs...)
+		child = child.NextSibling()
+	}
+	return children, nil
+}
+
+func forceIntoText(source []byte, n ast.Node) string {
+	texts := make([]string, 0)
+	ast.Walk(n, func(n2 ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			switch t := n2.(type) {
+			case *ast.Text:
+				texts = append(texts, string(t.Value(source)))
+			}
+		}
+		return ast.WalkContinue, nil
+	})
+	return strings.Join(texts, " ")
+}
+
+func forceIntoHeadingText(source []byte, n ast.Node) string {
+	var text strings.Builder
+	ast.Walk(n, func(n2 ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			switch t := n2.(type) {
+			case *ast.Text:
+				text.Write(t.Value(source))
+			}
+		}
+		return ast.WalkContinue, nil
+	})
+	return text.String()
+}

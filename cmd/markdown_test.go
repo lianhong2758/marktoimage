@@ -67,9 +67,9 @@ func TestRichText(t *testing.T) {
 			Title: "Win11",
 			Width: 960,
 		},
-		&marktoimage.HyperlinkSegment{Style: marktoimage.TextStyle{Inline: false, Color: color.RGBA{0, 0, 255, 255}}, Text: "假如这是一个链接"},
+		&marktoimage.HyperlinkSegment{Style: marktoimage.TextStyleLink, Text: "假如这是一个链接"},
+		&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "这是正常文本"},
 	)
-	rt.SetFontSize(marktoimage.TextStyle{Inline: true, Size: 40})
 	rt.Draw()
 	rt.Cut()
 	rt.Cov.SavePNG("test.png")

@@ -48,6 +48,7 @@ type Colors struct {
 	CodeBlockBgColor color.Color
 	CodeColor        color.Color
 	CodeNoteColor    color.Color
+	LinkColor        color.Color
 }
 
 func NewRichText(cfg Config) *RichText {
@@ -84,6 +85,11 @@ func (cfg *Config) setDefaultColor() {
 		r, g, b, a := gg.ParseHexColor("#7a818a")
 		cfg.Colors.CodeNoteColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 	}
+	if cfg.Colors.LinkColor == nil {
+		r, g, b, a := gg.ParseHexColor("#478be6")
+		cfg.Colors.LinkColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+	}
+
 }
 
 func (r *RichText) AppendSegment(rs ...RichTextSegment) {
@@ -94,15 +100,14 @@ func (r *RichText) AppendSegment(rs ...RichTextSegment) {
 }
 
 func (r *RichText) Draw() {
+	r.Align()
 	for k := 0; k < len(r.Segments)-1; k++ {
-		//	r.NextInline = r.Segments[k+1].Inline()
 		r.Segments[k].Draw()
 		//检查余量
 		if r.Height-r.Y < 200 {
 			r.Expansion()
 		}
 	}
-	//	r.NextInline = false
 	r.Segments[len(r.Segments)-1].Draw()
 }
 
@@ -135,6 +140,13 @@ func (r *RichText) Expansion() {
 	r.Cov = newDC
 }
 
+// 防止最后一行时.Inline()==true导致Y没有移动到应该切割的位置,需要补充换行
+func (r *RichText) Align() {
+	if r.Segments[len(r.Segments)-1].Inline() {
+		r.AppendSegment(&TextSegment{Style: TextStyleBlockquote, Text: ""})
+	}
+}
+
 var (
 	//默认文本
 	TextStyleDefault = TextStyle{Inline: true, Size: 40}
@@ -149,7 +161,7 @@ var (
 	//用于List的序号样式
 	TextStyleList = TextStyle{Inline: true, Size: 40}
 	//用于link
-	TextStyleLink = TextStyle{Inline: true, Color: color.RGBA{0, 0, 255, 255}}
+	TextStyleLink = TextStyle{Inline: true}
 	//用于code
 	TextStyleCode = TextStyle{Inline: true}
 	//strong

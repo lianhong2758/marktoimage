@@ -34,15 +34,7 @@ func (t *TextSegment) Draw() {
 	}
 }
 
-// func (t *TextSegment) CheckLine() {
-// 	nt := strings.Split(t.Text, "\n")
-// 	for i, v := range nt {
-// 		t := TextSegment{Text: v, Style: t.Style}
-// 		t.Style.Block = true
-// 		t.SetParent(t.parent)
-// 		t.Draw()
-// 	}
-// }
+ 
 
 func (t *TextSegment) color() color.Color {
 	if t.Style.Color == nil {

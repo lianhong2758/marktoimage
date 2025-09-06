@@ -128,7 +128,7 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		if t.SoftLineBreak() {
 			return []RichTextSegment{
 				&TextSegment{Style: TextStyleDefault, Text: text},
-				&TextSegment{Style: TextStyleBlockquote, Text: " "},
+				&TextSegment{Style: TextStyleBlockquote, Text: ""},
 			}, nil
 		}
 		return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: text}}, nil

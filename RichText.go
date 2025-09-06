@@ -74,6 +74,10 @@ func (r *RichText) Draw() {
 	for k := 0; k < len(r.Segments)-1; k++ {
 		r.NextInline = r.Segments[k+1].Inline()
 		r.Segments[k].Draw()
+		//检查余量
+		if r.Height-r.Y < 200 {
+			r.Expansion()
+		}
 	}
 	r.NextInline = false
 	r.Segments[len(r.Segments)-1].Draw()
@@ -89,6 +93,23 @@ func (r *RichText) SetFontSize(t TextStyle) {
 	}
 	r.Size = t.Size
 	r.Cov.ParseFontFace(r.FontData[0], t.Size)
+}
+
+func (r *RichText) Cut() {
+	if r.Cov.Height() < int(r.Y) {
+		return
+	}
+	r.Y += r.LineHeight
+	newDC := gg.NewContext(r.Cov.W(), int(r.Y))
+	newDC.DrawImage(r.Cov.Image(), 0, 0)
+	r.Cov = newDC
+}
+
+// 扩充画布高度
+func (r *RichText) Expansion() {
+	newDC := gg.NewContext(r.Cov.W(), int(r.Config.Height)*2)
+	newDC.DrawImage(r.Cov.Image(), 0, 0)
+	r.Cov = newDC
 }
 
 var (

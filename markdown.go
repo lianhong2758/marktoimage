@@ -60,8 +60,10 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		children, err := renderChildren(source, n, blockquote)
 		if !blockquote {
 			linebreak := &TextSegment{Style: TextStyleParagraph, Text: ""}
-			if t, ok := children[len(children)-1].(*TextSegment); ok {
-				t.Style.Inline = false
+			if children[len(children)-1].Inline() {
+				if t, ok := children[len(children)-1].(*TextSegment); ok {
+					t.Style.Inline = false
+				}
 			}
 			children = append(children, linebreak)
 		}

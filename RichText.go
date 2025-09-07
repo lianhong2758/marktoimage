@@ -156,7 +156,7 @@ var (
 	//换行文本
 	TextStyleEnter = TextStyle{Inline: false, Size: 40}
 	//用于组件间距
-	TextStyleParagraph = TextStyle{Inline: false, Size: 20 }
+	TextStyleParagraph = TextStyle{Inline: false, Size: 20}
 	//四级标题
 	TextStyleHead = TextStyle{Inline: false, Bold: true, Size: 60}
 	//三级标题
@@ -170,6 +170,7 @@ var (
 	//用于code代码段```abc\ndef```
 	TextStyleCodeBlock = TextStyle{Inline: false, Size: 35, Block: true, Base: true}
 	//引用
+	//TextStyleNote.Color = cfg.Colors.NoteColor
 	TextStyleNote = TextStyle{Inline: false, Size: 35}
 	//strong
 	TextStyleStrong = TextStyle{Inline: true, Bold: true}

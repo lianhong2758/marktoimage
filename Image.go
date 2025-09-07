@@ -39,7 +39,7 @@ func (i *ImageSegment) Draw() {
 		t.Draw()
 	}
 	i.parent.Cov.DrawImageAnchored(i.Image, i.parent.Cov.W()/2, int(i.parent.Y+i.parent.LineHeight*2), 0.5, 0)
-	i.parent.X = i.parent.Config.TextMargin
+	i.parent.X = 0
 	i.parent.Y += i.parent.LineHeight*3 + float64(i.Image.Bounds().Dy())
 }
 

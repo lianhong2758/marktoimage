@@ -9,7 +9,7 @@ import (
 )
 
 func TestMarkdown(t *testing.T) {
-	data, err := os.ReadFile("regular.ttf")
+	data, err := os.ReadFile("MaokenZhuyuanTi.ttf")
 	if err != nil {
 		panic(err)
 	}

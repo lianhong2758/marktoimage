@@ -90,10 +90,10 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		link, _ := url.Parse(string(t.Destination))
 		text := forceIntoText(source, n)
 		return []RichTextSegment{&HyperlinkSegment{Text: text, URL: link, Style: TextStyleLink}}, nil
-	case *ast.CodeSpan:
+	case *ast.CodeSpan: //代码块
 		text := forceIntoText(source, n)
 		return []RichTextSegment{&TextSegment{Style: TextStyleCode, Text: text}}, nil
-	case *ast.CodeBlock, *ast.FencedCodeBlock:
+	case *ast.CodeBlock, *ast.FencedCodeBlock: //代码段
 		var data []byte
 		lines := n.Lines()
 		for i := 0; i < lines.Len(); i++ {
@@ -106,7 +106,7 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		if data[len(data)-1] == '\n' {
 			data = data[:len(data)-1]
 		}
-		return []RichTextSegment{&TextSegment{Style: TextStyleCode, Text: string(data)}}, nil
+		return []RichTextSegment{&TextSegment{Style: TextStyleCodeBlock, Text: string(data)}}, nil
 	case *ast.Emphasis:
 		text := string(forceIntoText(source, n))
 		switch t.Level {

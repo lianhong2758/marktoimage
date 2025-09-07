@@ -23,6 +23,8 @@ type TextStyle struct {
 	Bold      bool //加粗
 	Italic    bool //斜体
 	Underline bool //下划线
+	Block     bool //是否是块代码,作为一个整体绘制,解析\n
+	Base      bool //背景色
 }
 
 // RichText 表示富文本
@@ -74,7 +76,7 @@ func (cfg *Config) setDefaultColor() {
 		cfg.Colors.BackgroundColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 	}
 	if cfg.Colors.CodeBlockBgColor == nil {
-		r, g, b, a := gg.ParseHexColor("#262c36")
+		r, g, b, a := gg.ParseHexColor("#323943")
 		cfg.Colors.CodeBlockBgColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 	}
 	if cfg.Colors.CodeColor == nil {
@@ -128,7 +130,7 @@ func (r *RichText) Cut() {
 		return
 	}
 	r.Y += r.LineHeight
-	newDC := gg.NewContext(r.Cov.W(), int(r.Y))
+	newDC := gg.NewContext(r.Cov.W(), int(r.Y)+20)
 	newDC.DrawImage(r.Cov.Image(), 0, 0)
 	r.Cov = newDC
 }
@@ -162,8 +164,10 @@ var (
 	TextStyleList = TextStyle{Inline: true, Size: 40}
 	//用于link
 	TextStyleLink = TextStyle{Inline: true}
-	//用于code
-	TextStyleCode = TextStyle{Inline: true}
+	//用于code代码块`abc`
+	TextStyleCode = TextStyle{Inline: true, Size: 40, Base: true}
+	//用于code代码段```abc\ndef```
+	TextStyleCodeBlock = TextStyle{Inline: false, Size: 40, Block: true, Base: true}
 	//strong
 	TextStyleStrong = TextStyle{Inline: true, Bold: true}
 	//Italic

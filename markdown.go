@@ -1,6 +1,7 @@
 package marktoimage
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/url"
@@ -59,6 +60,9 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		children, err := renderChildren(source, n, blockquote)
 		if !blockquote {
 			linebreak := &TextSegment{Style: TextStyleParagraph, Text: ""}
+			if t, ok := children[len(children)-1].(*TextSegment); ok {
+				t.Style.Inline = false
+			}
 			children = append(children, linebreak)
 		}
 		return children, err
@@ -122,13 +126,15 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 			return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: " "}}, nil
 		}
 		if blockquote {
-			return []RichTextSegment{&TextSegment{Style: TextStyleBlockquote, Text: text}}, nil
+			return []RichTextSegment{&TextSegment{Style: TextStyleNote, Text: text}}, nil
 		}
 		//需要换行
-		if t.SoftLineBreak() {
+		_, ok := n.NextSibling().(*ast.Paragraph)
+		fmt.Println(ok)
+		if t.SoftLineBreak() || ok {
 			return []RichTextSegment{
 				&TextSegment{Style: TextStyleDefault, Text: text},
-				&TextSegment{Style: TextStyleBlockquote, Text: ""},
+				&TextSegment{Style: TextStyleEnter, Text: ""},
 			}, nil
 		}
 		return []RichTextSegment{&TextSegment{Style: TextStyleDefault, Text: text}}, nil

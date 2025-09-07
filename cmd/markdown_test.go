@@ -58,7 +58,7 @@ func TestRichText(t *testing.T) {
 		&marktoimage.SeparatorSegment{},
 		&marktoimage.TextSegment{Style: marktoimage.TextStyle{Inline: false}, Text: "abcdefg"},
 		&marktoimage.ListSegment{Ordered: true, Items: []marktoimage.RichTextSegment{
-			&marktoimage.TextSegment{Style: marktoimage.TextStyleBlockquote, Text: "abc"},
+			&marktoimage.TextSegment{Style: marktoimage.TextStyleEnter, Text: "abc"},
 			&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "efg"},
 			&marktoimage.TextSegment{Style: marktoimage.TextStyleDefault, Text: "abdefg"},
 		}},

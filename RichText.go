@@ -49,7 +49,7 @@ type Colors struct {
 	BackgroundColor  color.Color
 	CodeBlockBgColor color.Color
 	CodeColor        color.Color
-	CodeNoteColor    color.Color
+	NoteColor        color.Color //引用
 	LinkColor        color.Color
 }
 
@@ -83,10 +83,11 @@ func (cfg *Config) setDefaultColor() {
 		r, g, b, a := gg.ParseHexColor("#d1d7e0")
 		cfg.Colors.CodeColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 	}
-	if cfg.Colors.CodeNoteColor == nil {
+	if cfg.Colors.NoteColor == nil {
 		r, g, b, a := gg.ParseHexColor("#7a818a")
-		cfg.Colors.CodeNoteColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+		cfg.Colors.NoteColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 	}
+	TextStyleNote.Color = cfg.Colors.NoteColor
 	if cfg.Colors.LinkColor == nil {
 		r, g, b, a := gg.ParseHexColor("#478be6")
 		cfg.Colors.LinkColor = color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
@@ -130,7 +131,7 @@ func (r *RichText) Cut() {
 		return
 	}
 	r.Y += r.LineHeight
-	newDC := gg.NewContext(r.Cov.W(), int(r.Y)+20)
+	newDC := gg.NewContext(r.Cov.W(), int(r.Y)+10)
 	newDC.DrawImage(r.Cov.Image(), 0, 0)
 	r.Cov = newDC
 }
@@ -145,7 +146,7 @@ func (r *RichText) Expansion() {
 // 防止最后一行时.Inline()==true导致Y没有移动到应该切割的位置,需要补充换行
 func (r *RichText) Align() {
 	if r.Segments[len(r.Segments)-1].Inline() {
-		r.AppendSegment(&TextSegment{Style: TextStyleBlockquote, Text: ""})
+		r.AppendSegment(&TextSegment{Style: TextStyleEnter, Text: ""})
 	}
 }
 
@@ -153,9 +154,9 @@ var (
 	//默认文本
 	TextStyleDefault = TextStyle{Inline: true, Size: 40}
 	//换行文本
-	TextStyleBlockquote = TextStyle{Inline: false, Size: 40}
-	//段落,用于组件间距
-	TextStyleParagraph = TextStyle{Inline: false, Size: 15 + 40}
+	TextStyleEnter = TextStyle{Inline: false, Size: 40}
+	//用于组件间距
+	TextStyleParagraph = TextStyle{Inline: false, Size: 20 }
 	//四级标题
 	TextStyleHead = TextStyle{Inline: false, Bold: true, Size: 60}
 	//三级标题
@@ -167,7 +168,9 @@ var (
 	//用于code代码块`abc`
 	TextStyleCode = TextStyle{Inline: true, Size: 40, Base: true}
 	//用于code代码段```abc\ndef```
-	TextStyleCodeBlock = TextStyle{Inline: false, Size: 40, Block: true, Base: true}
+	TextStyleCodeBlock = TextStyle{Inline: false, Size: 35, Block: true, Base: true}
+	//引用
+	TextStyleNote = TextStyle{Inline: false, Size: 35}
 	//strong
 	TextStyleStrong = TextStyle{Inline: true, Bold: true}
 	//Italic

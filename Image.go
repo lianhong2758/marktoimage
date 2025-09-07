@@ -37,6 +37,9 @@ func (i *ImageSegment) Draw() {
 		t := TextSegment{Text: i.Title, Style: TextStyle{Inline: false, Color: i.parent.Colors.DefaultColor}}
 		t.SetParent(i.parent)
 		t.Draw()
+		i.parent.X = 0
+		t.parent.Y += t.parent.Size + t.parent.LineHeight
+		return
 	}
 	i.parent.Cov.DrawImageAnchored(i.Image, i.parent.Cov.W()/2, int(i.parent.Y+i.parent.LineHeight*2), 0.5, 0)
 	i.parent.X = 0

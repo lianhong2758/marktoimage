@@ -22,3 +22,7 @@ type TextSegment struct {
 	parent *RichText
 }
 ```
+![替代文字](图片1.jpg "win11娘")
+>这是引用
+>
+>引用saafda 

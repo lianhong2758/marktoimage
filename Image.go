@@ -34,11 +34,12 @@ func (i *ImageSegment) Draw() {
 	i.InitImage()
 	i.resize()
 	if i.Image == nil {
-		t := TextSegment{Text: i.Title, Style: TextStyle{Inline: false, Color: i.parent.Colors.DefaultColor}}
+		t := TextSegment{Style: TextStyleParagraph, Text: ""}
 		t.SetParent(i.parent)
 		t.Draw()
-		i.parent.X = 0
-		t.parent.Y += t.parent.Size + t.parent.LineHeight
+		t = TextSegment{Text: i.Title, Style: TextStyleEnter}
+		t.SetParent(i.parent)
+		t.Draw()
 		return
 	}
 	i.parent.Cov.DrawImageAnchored(i.Image, i.parent.Cov.W()/2, int(i.parent.Y+i.parent.LineHeight*2), 0.5, 0)

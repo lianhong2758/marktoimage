@@ -30,13 +30,13 @@ func (t *TextSegment) Draw() {
 		if w > float64(t.parent.Cov.W())-2*t.parent.Config.TextMargin { //溢出,需要分行
 			lines := TextWrap(t.parent.Cov, t.Text, float64(t.parent.Cov.W())-2*t.parent.Config.TextMargin)
 			for i, line := range lines {
-				t := TextSegment{Text: line, Style: t.Style}
-				t.SetParent(t.parent)
-				t.Draw()
+				t1 := TextSegment{Text: line, Style: t.Style}
+				t1.SetParent(t.parent)
+				t1.Draw()
 				if i < len(lines)-1 && t.Inline() {
-					t = TextSegment{Style: TextStyleParagraph, Text: ""}
-					t.SetParent(t.parent)
-					t.Draw()
+					t1 = TextSegment{Style: TextStyleParagraph, Text: ""}
+					t1.SetParent(t.parent)
+					t1.Draw()
 				}
 			}
 		}

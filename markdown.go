@@ -1,7 +1,6 @@
 package marktoimage
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/url"
@@ -132,7 +131,6 @@ func renderNode(source []byte, n ast.Node, blockquote bool) ([]RichTextSegment, 
 		}
 		//需要换行
 		_, ok := n.NextSibling().(*ast.Paragraph)
-		fmt.Println(ok)
 		if t.SoftLineBreak() || ok {
 			return []RichTextSegment{
 				&TextSegment{Style: TextStyleDefault, Text: text},

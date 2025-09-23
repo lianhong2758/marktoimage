@@ -3,9 +3,10 @@ package markdown_test
 import (
 	"fmt"
 	"image/color"
-	"marktoimage"
 	"os"
 	"testing"
+
+	"github.com/lianhong2758/marktoimage"
 )
 
 func TestMarkdown(t *testing.T) {

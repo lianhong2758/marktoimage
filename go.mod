@@ -1,4 +1,4 @@
-module marktoimage
+module github.com/lianhong2758/marktoimage
 
 go 1.24.0
 

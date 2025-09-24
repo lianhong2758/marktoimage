@@ -150,6 +150,16 @@ func (r *RichText) Align() {
 	}
 }
 
+// 清空richtext,准备解析下一个内容
+func (r *RichText) Clear() {
+	cov := gg.NewContext(int(r.Width), int(r.Height))
+	cov.SetColor(r.Colors.BackgroundColor)
+	cov.Clear()
+	r.Cov = cov
+	r.Segments = []RichTextSegment{}
+	r.Point = gg.Point{X: 0, Y: r.TopMargin}
+}
+
 var (
 	//默认文本
 	TextStyleDefault = TextStyle{Inline: true, Size: 40}

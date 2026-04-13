@@ -50,7 +50,7 @@ func main() {
 		in    = flag.String("in", "", "Markdown 文件路径，留空则使用内置示例")
 		out   = flag.String("out", "output/markdown.png", "输出 PNG 路径")
 		width = flag.Int("width", 1200, "图片宽度")
-		font  = flag.String("font", "../../MaokenZhuyuanTi.ttf", "TTF 字体文件路径")
+		font  = flag.String("font", "", "TTF 字体文件路径，留空时自动探测常见中文字体位置")
 		theme = flag.String("theme", string(renderer.ThemeDefault), "内置主题，可选: "+strings.Join(renderer.ThemeNames(), ", "))
 	)
 	flag.Parse()
@@ -71,10 +71,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	fontPath, autoDetected, err := resolveFontPath(*font)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "字体配置无效: %v\n", err)
+		os.Exit(1)
+	}
+	if autoDetected != "" {
+		fmt.Fprintf(os.Stderr, "使用自动探测到的字体: %s\n", autoDetected)
+	} else if fontPath == "" {
+		fmt.Fprintln(os.Stderr, "未找到可用的自定义字体，回退到内置 Go 字体；中文可能无法正常显示，可通过 -font 指定 TTF。")
+	}
+
 	r, err := renderer.New(renderer.Options{
 		ThemeName: themeName,
 		Width:     *width,
-		FontPath:  filepath.Clean(*font),
+		FontPath:  fontPath,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "初始化渲染器失败: %v\n", err)
@@ -88,4 +99,39 @@ func main() {
 	}
 
 	fmt.Printf("已生成图片: %s\n", output)
+}
+
+func resolveFontPath(raw string) (resolved string, autoDetected string, err error) {
+	if strings.TrimSpace(raw) != "" {
+		path := filepath.Clean(raw)
+		if !fileExists(path) {
+			return "", "", fmt.Errorf("font file %q does not exist", path)
+		}
+		return path, "", nil
+	}
+
+	for _, candidate := range autoFontCandidates() {
+		if fileExists(candidate) {
+			return candidate, candidate, nil
+		}
+	}
+
+	return "", "", nil
+}
+
+func autoFontCandidates() []string {
+	return []string{
+		"MaokenZhuyuanTi.ttf",
+		filepath.Join("..", "MaokenZhuyuanTi.ttf"),
+		filepath.Join("..", "cmd", "MaokenZhuyuanTi.ttf"),
+		filepath.Join("v2", "MaokenZhuyuanTi.ttf"),
+		filepath.Join("cmd", "MaokenZhuyuanTi.ttf"),
+		filepath.Join("..", "..", "MaokenZhuyuanTi.ttf"),
+		filepath.Join("..", "..", "cmd", "MaokenZhuyuanTi.ttf"),
+	}
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }

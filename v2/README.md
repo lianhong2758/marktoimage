@@ -15,19 +15,29 @@
 快速运行：
 
 ```powershell
-go run ./cmd/mdrender
+go run ./cmd
 ```
 
 渲染指定 Markdown 文件：
 
 ```powershell
-go run ./cmd/mdrender -in ./example.md -out ./output/example.png
+go run ./cmd -in ./example.md -out ./output/example.png
 ```
 
 切换到 GitHub 风格深色主题：
 
 ```powershell
-go run ./cmd/mdrender -in ./example.md -out ./output/example-dark.png -theme github-dark
+go run ./cmd -in ./example.md -out ./output/example-dark.png -theme github-dark
+```
+
+字体说明：
+
+- CLI 会自动探测仓库中的常见中文字体位置。
+- 如果没有找到字体文件，会回退到内置 Go 字体；英文可以正常渲染，但中文可能无法正常显示。
+- 你也可以显式指定字体文件：
+
+```powershell
+go run ./cmd -in ./example.md -out ./output/example.png -font ../cmd/MaokenZhuyuanTi.ttf
 ```
 
 如果你在代码里初始化渲染器，也可以直接传入主题名：

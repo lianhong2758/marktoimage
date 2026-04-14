@@ -1,4 +1,4 @@
-package renderer
+package marktoimage
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package renderer
+package marktoimage
 
 import (
 	"fmt"
@@ -41,7 +41,12 @@ type Options struct {
 	Theme     Theme
 	ThemeName ThemeName
 	Width     int
-	FontPath  string
+	Fonts     [][]byte
+}
+
+// FontSet 仅保留给旧调用做兼容，新的字体入口统一使用 [][]byte。
+type FontSet struct {
+	Regular []byte
 }
 
 // Renderer 负责 Markdown 的解析、布局与绘制。
@@ -65,7 +70,7 @@ func New(opts Options) (*Renderer, error) {
 		return nil, err
 	}
 
-	fonts, err := newFontManager(opts.FontPath)
+	fonts, err := newFontManager(opts.Fonts)
 	if err != nil {
 		return nil, err
 	}
@@ -128,66 +133,24 @@ func (r *Renderer) RenderToFile(markdown []byte, outputPath string) error {
 }
 
 type fontManager struct {
+	fontData      map[FontFamily][]byte
 	fonts         map[FontFamily]*opentype.Font
 	faces         map[string]font.Face
 	hasCustomText bool
 }
 
-func newFontManager(customFontPath string) (*fontManager, error) {
-	parse := func(ttf []byte) (*opentype.Font, error) {
-		return opentype.Parse(ttf)
-	}
-
-	regular, err := parse(goregular.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("parse regular font: %w", err)
-	}
-	bold, err := parse(gobold.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("parse bold font: %w", err)
-	}
-	italic, err := parse(goitalic.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("parse italic font: %w", err)
-	}
-	boldItalic, err := parse(gobolditalic.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("parse bold italic font: %w", err)
-	}
-	mono, err := parse(gomono.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("parse mono font: %w", err)
-	}
-
-	if customFontPath != "" {
-		customTTF, err := os.ReadFile(customFontPath)
-		if err != nil {
-			return nil, fmt.Errorf("read custom font %q: %w", customFontPath, err)
-		}
-
-		custom, err := parse(customTTF)
-		if err != nil {
-			return nil, fmt.Errorf("parse custom font %q: %w", customFontPath, err)
-		}
-
-		// 当前只提供了一份中文字体文件，因此把它复用到常规文本样式上。
-		// 代码块仍然保留等宽字体，避免代码对齐和可读性下降。
-		regular = custom
-		bold = custom
-		italic = custom
-		boldItalic = custom
-	}
-
+func newFontManager(customFonts [][]byte) (*fontManager, error) {
 	return &fontManager{
-		fonts: map[FontFamily]*opentype.Font{
-			FontRegular:    regular,
-			FontBold:       bold,
-			FontItalic:     italic,
-			FontBoldItalic: boldItalic,
-			FontMono:       mono,
+		fontData: map[FontFamily][]byte{
+			FontRegular:    firstNonEmpty(fontAt(customFonts, 0), goregular.TTF),
+			FontBold:       firstNonEmpty(fontAt(customFonts, 1), fontAt(customFonts, 0), gobold.TTF),
+			FontItalic:     firstNonEmpty(fontAt(customFonts, 2), fontAt(customFonts, 0), goitalic.TTF),
+			FontBoldItalic: firstNonEmpty(fontAt(customFonts, 3), fontAt(customFonts, 0), gobolditalic.TTF),
+			FontMono:       firstNonEmpty(fontAt(customFonts, 4), gomono.TTF),
 		},
+		fonts:         make(map[FontFamily]*opentype.Font, 5),
 		faces:         make(map[string]font.Face, 32),
-		hasCustomText: customFontPath != "",
+		hasCustomText: len(customFonts) > 0 && len(fontAt(customFonts, 0)) > 0,
 	}, nil
 }
 
@@ -197,9 +160,9 @@ func (m *fontManager) face(family FontFamily, size float64) (font.Face, error) {
 		return face, nil
 	}
 
-	ttf := m.fonts[family]
-	if ttf == nil {
-		return nil, fmt.Errorf("unknown font family: %s", family)
+	ttf, err := m.parsedFont(family)
+	if err != nil {
+		return nil, err
 	}
 
 	face, err := opentype.NewFace(ttf, &opentype.FaceOptions{
@@ -213,6 +176,25 @@ func (m *fontManager) face(family FontFamily, size float64) (font.Face, error) {
 
 	m.faces[key] = face
 	return face, nil
+}
+
+func (m *fontManager) parsedFont(family FontFamily) (*opentype.Font, error) {
+	if ttf, ok := m.fonts[family]; ok {
+		return ttf, nil
+	}
+
+	data := m.fontData[family]
+	if len(data) == 0 {
+		return nil, fmt.Errorf("unknown font family: %s", family)
+	}
+
+	ttf, err := opentype.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s font: %w", family, err)
+	}
+
+	m.fonts[family] = ttf
+	return ttf, nil
 }
 
 type textStyle struct {
@@ -393,4 +375,20 @@ func hasNonASCII(text string) bool {
 		}
 	}
 	return false
+}
+
+func firstNonEmpty(values ...[]byte) []byte {
+	for _, value := range values {
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return nil
+}
+
+func fontAt(fonts [][]byte, index int) []byte {
+	if index < 0 || index >= len(fonts) {
+		return nil
+	}
+	return fonts[index]
 }

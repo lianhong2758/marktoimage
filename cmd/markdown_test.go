@@ -7,16 +7,13 @@ import (
 	"testing"
 
 	"github.com/lianhong2758/marktoimage"
+	markfont "github.com/lianhong2758/marktoimage/v2/font"
 )
 
 func TestMarkdown(t *testing.T) {
-	data, err := os.ReadFile("../MaokenZhuyuanTi.ttf")
-	if err != nil {
-		panic(err)
-	}
 	rt := marktoimage.NewRichText(
 		marktoimage.Config{
-			FontData:   [][]byte{data},
+			FontData:   [][]byte{markfont.TTF},
 			Width:      1080,
 			Height:     1920,
 			LineHeight: 8,
@@ -37,13 +34,9 @@ func TestMarkdown(t *testing.T) {
 }
 
 func TestRichText(t *testing.T) {
-	data, err := os.ReadFile("../MaokenZhuyuanTi.ttf")
-	if err != nil {
-		panic(err)
-	}
 	rt := marktoimage.NewRichText(
 		marktoimage.Config{
-			FontData:   [][]byte{data},
+			FontData:   [][]byte{markfont.TTF},
 			Width:      1080,
 			Height:     1920,
 			LineHeight: 8,

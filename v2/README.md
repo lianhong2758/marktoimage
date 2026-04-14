@@ -32,20 +32,31 @@ go run ./cmd -in ./example.md -out ./output/example-dark.png -theme github-dark
 
 字体说明：
 
-- CLI 会自动探测仓库中的常见中文字体位置。
-- 如果没有找到字体文件，会回退到内置 Go 字体；英文可以正常渲染，但中文可能无法正常显示。
-- 你也可以显式指定字体文件：
+- `v2/font` 中已经静态嵌入了一份中文字体，CLI 默认会启用它。
+- 如果留空 `-embed-font`，程序会回退到内置 Go 字体；英文可以正常渲染，但中文可能无法正常显示。
+- 如果你想覆盖内置字体，也可以显式指定外部字体文件：
 
 ```powershell
 go run ./cmd -in ./example.md -out ./output/example.png -font ../cmd/MaokenZhuyuanTi.ttf
 ```
 
+- 如果你不想加载 `v2/font` 中的嵌入字体，可以显式清空：
+
+```powershell
+go run ./cmd -in ./example.md -out ./output/example.png -embed-font ""
+```
+
 如果你在代码里初始化渲染器，也可以直接传入主题名：
 
 ```go
+import (
+	renderer "github.com/lianhong2758/marktoimage/v2"
+	"github.com/lianhong2758/marktoimage/v2/font"
+)
+
 r, err := renderer.New(renderer.Options{
 	ThemeName: renderer.ThemeGitHubDark,
 	Width:     1200,
-	FontPath:  "MaokenZhuyuanTi.ttf",
+	Fonts:     [][]byte{font.TTF},
 })
 ```

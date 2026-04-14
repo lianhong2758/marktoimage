@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lianhong2758/marktoimage/renderer"
+	"github.com/lianhong2758/marktoimage/v2/renderer"
 )
 
 const sampleMarkdown = `# Markdown 转图片示例

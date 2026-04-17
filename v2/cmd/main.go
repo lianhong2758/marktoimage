@@ -30,14 +30,24 @@ const sampleMarkdown = `# Markdown 转图片示例
 ## 代码块
 
 ` + "```go" + `
-func RenderMarkdownToPNG(src []byte, output string) error {
+func main() {
 	r, err := marktoimage.New(marktoimage.Options{
-		ThemeName: "github-dark,
+		ThemeName: marktoimage.ThemeGitHubDark,
 		Width:     1200,
 		Fonts:     [][]byte{markfont.TTF},
 	})
-	return r.RenderToFile(src, output)
+	if err != nil {
+		fmt.Printf("初始化渲染器失败: %v\n", err)
+		return
+	}
+	if err := r.RenderToFile([]byte(sampleMarkdown), "markdown.png"); err != nil {
+		fmt.Printf("生成图片失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("已生成图片: %s\n", "markdown.png")
 }
+
 ` + "```" + `
 ---
 ![RUNOOB 图标](https://static.jyshare.com/images/runoob-logo.png)

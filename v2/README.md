@@ -40,22 +40,16 @@ go run ./cmd -in ./example.md -out ./output/example-dark.png -theme github-dark
 go run ./cmd -in ./example.md -out ./output/example.png -font ../cmd/MaokenZhuyuanTi.ttf
 ```
 
-- 如果你不想加载 `v2/font` 中的嵌入字体，可以显式清空：
-
-```powershell
-go run ./cmd -in ./example.md -out ./output/example.png -embed-font ""
-```
-
 如果你在代码里初始化渲染器，也可以直接传入主题名：
 
 ```go
 import (
-	renderer "github.com/lianhong2758/marktoimage/v2"
+	"github.com/lianhong2758/marktoimage/v2"
 	"github.com/lianhong2758/marktoimage/v2/font"
 )
 
-r, err := renderer.New(renderer.Options{
-	ThemeName: renderer.ThemeGitHubDark,
+r, err := marktoimage.New(renderer.Options{
+	ThemeName: marktoimage.ThemeGitHubDark,
 	Width:     1200,
 	Fonts:     [][]byte{font.TTF},
 })

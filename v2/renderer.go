@@ -42,6 +42,7 @@ type Options struct {
 	ThemeName ThemeName
 	Width     int
 	Fonts     [][]byte
+	BaseDir   string
 }
 
 // FontSet 仅保留给旧调用做兼容，新的字体入口统一使用 [][]byte。
@@ -57,6 +58,7 @@ type FontSet struct {
 // 3. 一次性绘制到图片
 type Renderer struct {
 	theme       Theme
+	baseDir     string
 	md          goldmark.Markdown
 	fonts       *fontManager
 	measureDC   *gg.Context
@@ -77,6 +79,7 @@ func New(opts Options) (*Renderer, error) {
 
 	return &Renderer{
 		theme:       theme,
+		baseDir:     cleanDir(opts.BaseDir),
 		md:          goldmark.New(),
 		fonts:       fonts,
 		measureDC:   gg.NewContext(8, 8),
@@ -391,4 +394,12 @@ func fontAt(fonts [][]byte, index int) []byte {
 		return nil
 	}
 	return fonts[index]
+}
+
+func cleanDir(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	return filepath.Clean(path)
 }

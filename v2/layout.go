@@ -20,6 +20,7 @@ type layoutBlock struct {
 	Y        float64
 	Width    float64
 	Height   float64
+	Image    image.Image
 	Lines    []layoutLine
 	Items    []layoutListItem
 	Children []layoutBlock
@@ -109,6 +110,8 @@ func (r *Renderer) layoutBlocks(blocks []block, x, y, width float64, quoteDepth 
 				Width:  width,
 				Height: r.theme.RuleSpacing,
 			}
+		case blockImage:
+			lb, err = r.layoutImageBlock(b, x, cursor, width, quoteDepth)
 		case blockBlockquote:
 			lb, err = r.layoutQuoteBlock(b, x, cursor, width, quoteDepth)
 		case blockList:
@@ -145,6 +148,37 @@ func (r *Renderer) layoutTextualBlock(b block, x, y, width float64, base textSty
 		Width:  width,
 		Height: total,
 		Lines:  placed,
+	}, nil
+}
+
+func (r *Renderer) layoutImageBlock(b block, x, y, width float64, quoteDepth int) (layoutBlock, error) {
+	img, err := r.loadImage(b.Image.Source)
+	if err != nil {
+		fallback := block{
+			Kind: blockParagraph,
+			Inlines: []inlineSpan{{
+				Text: "[图片: " + b.Image.Alt + "]",
+			}},
+		}
+		return r.layoutTextualBlock(fallback, x, y, width, r.paragraphStyle(quoteDepth))
+	}
+
+	bounds := img.Bounds()
+	drawWidth := float64(bounds.Dx())
+	drawHeight := float64(bounds.Dy())
+	if drawWidth > width && drawWidth > 0 {
+		scale := width / drawWidth
+		drawWidth = width
+		drawHeight *= scale
+	}
+
+	return layoutBlock{
+		Kind:   blockImage,
+		X:      x,
+		Y:      y,
+		Width:  drawWidth,
+		Height: drawHeight,
+		Image:  img,
 	}, nil
 }
 
@@ -702,6 +736,11 @@ func (r *Renderer) drawBlock(dc *gg.Context, block layoutBlock) error {
 		dc.DrawLine(block.X, y, block.X+block.Width, y)
 		dc.Stroke()
 		return nil
+	case blockImage:
+		if block.Image == nil {
+			return nil
+		}
+		return r.drawImageBlock(dc, block)
 	case blockBlockquote:
 		dc.SetColor(r.theme.QuoteFill)
 		dc.DrawRoundedRectangle(block.X, block.Y, block.Width, block.Height, r.theme.Radius)
@@ -734,6 +773,24 @@ func (r *Renderer) drawBlock(dc *gg.Context, block layoutBlock) error {
 		}
 	}
 
+	return nil
+}
+
+func (r *Renderer) drawImageBlock(dc *gg.Context, block layoutBlock) error {
+	bounds := block.Image.Bounds()
+	srcWidth := float64(bounds.Dx())
+	srcHeight := float64(bounds.Dy())
+	if nearlyZero(srcWidth) || nearlyZero(srcHeight) || nearlyZero(block.Width) || nearlyZero(block.Height) {
+		return nil
+	}
+
+	if sameSize(srcWidth, block.Width) && sameSize(srcHeight, block.Height) {
+		dc.DrawImage(block.Image, int(block.X), int(block.Y))
+		return nil
+	}
+
+	scaled := scaleImage(block.Image, int(block.Width+0.5), int(block.Height+0.5))
+	dc.DrawImage(scaled, int(block.X), int(block.Y))
 	return nil
 }
 

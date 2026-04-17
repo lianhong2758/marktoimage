@@ -41,7 +41,8 @@ func RenderMarkdownToPNG(src []byte, output string) error {
 	return r.RenderToFile(src, output)
 }
 ` + "```" + `
-
+---
+[output/markdown.png]
 1. 先解析 Markdown
 2. 再根据宽度完成布局
 3. 最后一次性绘制到 PNG`
@@ -57,6 +58,7 @@ func main() {
 	flag.Parse()
 
 	content := []byte(sampleMarkdown)
+	baseDir := ""
 	if *in != "" {
 		data, err := os.ReadFile(*in)
 		if err != nil {
@@ -64,6 +66,7 @@ func main() {
 			os.Exit(1)
 		}
 		content = data
+		baseDir = filepath.Dir(filepath.Clean(*in))
 	}
 
 	themeName, err := marktoimage.ParseThemeName(*theme)
@@ -87,6 +90,7 @@ func main() {
 		ThemeName: themeName,
 		Width:     *width,
 		Fonts:     fontdata,
+		BaseDir:   baseDir,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "初始化渲染器失败: %v\n", err)

@@ -17,6 +17,7 @@ const (
 	blockList
 	blockCode
 	blockRule
+	blockImage
 )
 
 type document struct {
@@ -30,12 +31,18 @@ type block struct {
 	Level   int
 	Info    string
 	Inlines []inlineSpan
+	Image   imageBlock
 	Text    string
 	Items   []listItem
 	Blocks  []block
 	Ordered bool
 	Start   int
 	Tight   bool
+}
+
+type imageBlock struct {
+	Source string
+	Alt    string
 }
 
 type listItem struct {
@@ -70,15 +77,9 @@ func (r *Renderer) parseBlocks(parent ast.Node, source []byte) []block {
 		case *ast.TextBlock:
 			// tight list 中的正文通常会变成 TextBlock，而不是 Paragraph。
 			// 这里把它当作普通段落处理，避免列表项正文被漏掉。
-			blocks = append(blocks, block{
-				Kind:    blockParagraph,
-				Inlines: r.parseInlines(n, source, inlineSpan{}),
-			})
+			blocks = append(blocks, r.parseTextBlock(n, source))
 		case *ast.Paragraph:
-			blocks = append(blocks, block{
-				Kind:    blockParagraph,
-				Inlines: r.parseInlines(n, source, inlineSpan{}),
-			})
+			blocks = append(blocks, r.parseTextBlock(n, source))
 		case *ast.Blockquote:
 			blocks = append(blocks, block{
 				Kind:   blockBlockquote,
@@ -128,6 +129,58 @@ func (r *Renderer) parseList(n *ast.List, source []byte) block {
 	}
 
 	return list
+}
+
+func (r *Renderer) parseTextBlock(node ast.Node, source []byte) block {
+	if img, ok := r.parseStandaloneImage(node, source); ok {
+		return block{
+			Kind:  blockImage,
+			Image: img,
+		}
+	}
+
+	return block{
+		Kind:    blockParagraph,
+		Inlines: r.parseInlines(node, source, inlineSpan{}),
+	}
+}
+
+func (r *Renderer) parseStandaloneImage(parent ast.Node, source []byte) (imageBlock, bool) {
+	var img *ast.Image
+
+	for node := parent.FirstChild(); node != nil; node = node.NextSibling() {
+		switch n := node.(type) {
+		case *ast.Image:
+			if img != nil {
+				return imageBlock{}, false
+			}
+			img = n
+		case *ast.Text:
+			if strings.TrimSpace(string(n.Value(source))) != "" {
+				return imageBlock{}, false
+			}
+		case *ast.String:
+			if strings.TrimSpace(string(n.Value)) != "" {
+				return imageBlock{}, false
+			}
+		default:
+			return imageBlock{}, false
+		}
+	}
+
+	if img == nil {
+		return imageBlock{}, false
+	}
+
+	alt := strings.TrimSpace(r.collectPlainText(img, source))
+	if alt == "" {
+		alt = "图片"
+	}
+
+	return imageBlock{
+		Source: string(img.Destination),
+		Alt:    alt,
+	}, true
 }
 
 func (r *Renderer) parseInlines(parent ast.Node, source []byte, inherited inlineSpan) []inlineSpan {

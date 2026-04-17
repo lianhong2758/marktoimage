@@ -31,18 +31,16 @@ const sampleMarkdown = `# Markdown 转图片示例
 
 ` + "```go" + `
 func RenderMarkdownToPNG(src []byte, output string) error {
-	r, err := renderer.New(renderer.Options{
-		ThemeName: renderer.ThemeDefault,
+	r, err := marktoimage.New(marktoimage.Options{
+		ThemeName: "github-dark,
 		Width:     1200,
+		Fonts:     [][]byte{markfont.TTF},
 	})
-	if err != nil {
-		return err
-	}
 	return r.RenderToFile(src, output)
 }
 ` + "```" + `
 ---
-[output/markdown.png]
+![RUNOOB 图标](https://static.jyshare.com/images/runoob-logo.png)
 1. 先解析 Markdown
 2. 再根据宽度完成布局
 3. 最后一次性绘制到 PNG`
